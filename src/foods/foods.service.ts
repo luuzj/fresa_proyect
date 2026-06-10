@@ -1,26 +1,59 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateFoodDto } from './dto/create-food.dto';
 import { UpdateFoodDto } from './dto/update-food.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Food } from './entities/food.entity';
 
 @Injectable()
 export class FoodsService {
-  create(createFoodDto: CreateFoodDto) {
-    return 'This action adds a new food';
+
+  constructor(
+    @InjectRepository(Food)
+    private foodRepository: Repository<Food>
+  ) {}
+
+  async create(createFoodDto: CreateFoodDto) {
+    const food = this.foodRepository.create(createFoodDto);
+    return await this.foodRepository.save(food);
   }
 
-  findAll() {
-    return `This action returns all foods`;
+  async findAll() {
+    const foods = await this.foodRepository.find();
+    return foods;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} food`;
+  async findOne(id: number) {
+    const food = await this.foodRepository.findOneBy ({id});
+  
+    if (!food) {
+      throw new NotFoundException(`Comida con id ${id} no encontrada`);
+    }
+
+    return food;
   }
 
-  update(id: number, updateFoodDto: UpdateFoodDto) {
-    return `This action updates a #${id} food`;
+  async update(id: number, updateFoodDto: UpdateFoodDto) { 
+    const food = await this.foodRepository.findOneBy(
+      { id });
+    if (!food) {
+      throw new NotFoundException(`Comida con id ${id} actualizada`);
+    }
+    const updatedFood = this.foodRepository.merge(food, updateFoodDto);
+
+    // Guardar los cambios en la base de datos, actuailzar con patch    
+    return this.foodRepository.save(updatedFood);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} food`;
+async remove(id: number) {
+    const food = await this.foodRepository.findOneBy({ id });
+    if (!food) {
+      throw new NotFoundException(`Comida con id ${id} no encontrada`);
+    }
+    await this.foodRepository.delete(id);
+
+    return {
+      message: `Comida con id ${id} eliminada correctamente`,
+    };
   }
 }
