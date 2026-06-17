@@ -12,7 +12,7 @@ export class FoodsService {
     @InjectRepository(Food)
     private foodRepository: Repository<Food>
   ) {}
-
+  
   async create(createFoodDto: CreateFoodDto) {
     const food = this.foodRepository.create(createFoodDto);
     return await this.foodRepository.save(food);
